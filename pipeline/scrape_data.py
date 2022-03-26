@@ -46,7 +46,8 @@ def get_outcomes(games):
                 "selection_name": row[team],
                 "game_id": row["id"],
                 "result": _determine_result(row, row[team]),
-                "outcome_date": date.today()
+                "outcome_date": date.today(),
+                "runs": row[team.split("_")[0] + "_score"]
             }
             items.append(item)
     out = pd.DataFrame.from_records(items)
