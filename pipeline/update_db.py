@@ -9,7 +9,7 @@ import pandas as pd
 DB_CONN_URI = os.environ.get("DB_CONN_URI", "sqlite:///main.db")
 GAMES_TABLE = os.environ.get("GAMES_TABLE", "games")
 OUTCOMES_TABLE = os.environ.get("OUTCOMES_TABLE", "outcomes")
-DATA_DIR = os.environ.get("UECKER_DATA_DIR", ".")
+DATA_DIR = os.environ.get("UECKER_DATA_DIR", "output")
 
 
 def load_data(date_str):

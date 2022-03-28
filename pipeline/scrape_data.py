@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from datetime import date, timedelta
+import os
 
 import pandas as pd
 import statsapi
@@ -81,8 +82,10 @@ def main(date_str=None):
     games = clean_data(data)
     outcomes = get_outcomes(games)
     schedule = get_schedule(games)
-    schedule.to_csv(f"schedule_{today.isoformat()}.csv")
-    outcomes.to_csv(f"outcomes_{today.isoformat()}.csv")
+    if not os.path.exists("output"):
+        os.mkdir("output")
+    schedule.to_csv(f"output/schedule_{today.isoformat()}.csv")
+    outcomes.to_csv(f"output/outcomes_{today.isoformat()}.csv")
 
 
 if __name__ == "__main__":
