@@ -1,5 +1,3 @@
-from venv import create
-from sqlalchemy.orm import Session
 import sqlalchemy as db
 from db import *
 
