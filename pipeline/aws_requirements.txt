@@ -1,0 +1,5 @@
+boto3==1.13.11
+fsspec
+s3fs
+pandas
+MLB-StatsAPI
