@@ -29,11 +29,12 @@ class Outcome(Base):
     """
 
     __tablename__ = "outcomes"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String, primary_key=True)
     selection_name = db.Column(db.String)
     outcome_date = db.Column(db.Date)
     game_id = db.Column(db.Integer, db.ForeignKey("games.id"))
     result = db.Column(db.Integer)
+    runs = db.Column(db.Integer)
 
 
 class Wager(Base):
@@ -45,7 +46,7 @@ class Wager(Base):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
     wager_amount = db.Column(db.Integer)
-    outcome_id = db.Column(db.Integer, db.ForeignKey("games.id"))
+    outcome_id = db.Column(db.Integer, db.ForeignKey("outcomes.id"))
 
 
 class User(Base):
