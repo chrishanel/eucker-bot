@@ -1,6 +1,6 @@
+import os
 from argparse import ArgumentParser
 from datetime import date, timedelta
-import os
 
 import pandas as pd
 import statsapi
@@ -16,6 +16,7 @@ COL_NAMES = {
     "doubleheader": "dh"
 }
 SCHED_COLS = ["id", "home_team", "away_team", "date", "season", "week", "dh"]
+DATA_DIR = os.environ.get("UECKER_DATA_DIR", "output")
 
 
 def _week_of_season(date_):
@@ -71,9 +72,22 @@ def clean_data(data):
     return games
 
 
-def main(date_str=None):
+def write_data(schedule, outcomes, date_str, s3=False):
+    if s3:
+        bucket = os.environ["S3_BUCKET"]
+        prefix = f"s3://{bucket}"
+    else:
+        prefix = DATA_DIR
+        if not os.path.exists(DATA_DIR):
+            os.mkdir(DATA_DIR)
+    schedule.to_csv(os.path.join(prefix, f"schedule_{date_str}.csv"))
+    outcomes.to_csv(os.path.join(prefix, f"outcomes_{date_str}.csv"))
+
+
+def main(date_str=None, s3=False):
     if date_str is None:
         today = date.today()
+        date_str = today.isoformat()
     else:
         today = date.fromisoformat(date_str)
     yesterday = today - timedelta(days=1)
@@ -82,10 +96,15 @@ def main(date_str=None):
     games = clean_data(data)
     outcomes = get_outcomes(games)
     schedule = get_schedule(games)
-    if not os.path.exists("output"):
-        os.mkdir("output")
-    schedule.to_csv(f"output/schedule_{today.isoformat()}.csv")
-    outcomes.to_csv(f"output/outcomes_{today.isoformat()}.csv")
+    write_data(schedule, outcomes, date_str, s3)
+
+
+# Entrypoint when run as Lambda function
+def lambda_handler(event, context):
+    date_str = None
+    if "date" in event:
+        date_str = event["date"]
+    main(date_str, s3=True)
 
 
 if __name__ == "__main__":
@@ -93,6 +112,8 @@ if __name__ == "__main__":
     parser.add_argument("--date",
                         help="Date to scrape schedules around in YYYY-MM-DD format",
                         default=None, required=False)
+    parser.add_argument("--s3", help="Write to S3 bucket instead of filesystem",
+                        action="store_true")
     args = parser.parse_args()
-    main(args.date)
+    main(args.date, args.s3)
 
