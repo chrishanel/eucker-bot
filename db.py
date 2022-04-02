@@ -1,8 +1,10 @@
+import os
 import sqlalchemy as db
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-engine = db.create_engine("sqlite:///main.db")
+DB_CONN_URI = os.environ.get("DB_CONN_URI", "sqlite:///main.db")
+engine = db.create_engine(DB_CONN_URI)
 Session = sessionmaker()
 Session.configure(bind=engine)
 Base = declarative_base()
