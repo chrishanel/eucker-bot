@@ -5,6 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
+
 class Game(Base):
     """
     Available games to be wagered upon, and other metadata
@@ -95,6 +96,8 @@ class UserBonus(Base):
     status = db.Column(db.Integer)
     efft_d = db.Column(db.DateTime)
     expy_d = db.Column(db.DateTime)
+
+
 def main():
     DB_CONN_URI = os.environ.get("DB_CONN_URI", "sqlite:///main.db")
     engine = db.create_engine(DB_CONN_URI)
@@ -102,6 +105,7 @@ def main():
     Session.configure(bind=engine)
     session = Session()
     Base.metadata.create_all(engine)
+
 
 if __name__ == "__main__":
     main()

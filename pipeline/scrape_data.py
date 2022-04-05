@@ -13,7 +13,7 @@ COL_NAMES = {
     "home_name": "home_team",
     "away_name": "away_team",
     "game_date": "date",
-    "doubleheader": "dh"
+    "doubleheader": "dh",
 }
 SCHED_COLS = ["id", "home_team", "away_team", "date", "season", "week", "dh"]
 DATA_DIR = os.environ.get("UECKER_DATA_DIR", "output")
@@ -49,7 +49,7 @@ def get_outcomes(games):
                 "game_id": row["id"],
                 "result": _determine_result(row, row[team]),
                 "outcome_date": date.today(),
-                "runs": row[team.split("_")[0] + "_score"]
+                "runs": row[team.split("_")[0] + "_score"],
             }
             items.append(item)
     out = pd.DataFrame.from_records(items)
@@ -108,12 +108,17 @@ def lambda_handler(event, context):
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description="Scrape schedule and outcome data for uecker-bot.")
-    parser.add_argument("--date",
-                        help="Date to scrape schedules around in YYYY-MM-DD format",
-                        default=None, required=False)
-    parser.add_argument("--s3", help="Write to S3 bucket instead of filesystem",
-                        action="store_true")
+    parser = ArgumentParser(
+        description="Scrape schedule and outcome data for uecker-bot."
+    )
+    parser.add_argument(
+        "--date",
+        help="Date to scrape schedules around in YYYY-MM-DD format",
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
+        "--s3", help="Write to S3 bucket instead of filesystem", action="store_true"
+    )
     args = parser.parse_args()
     main(args.date, args.s3)
-

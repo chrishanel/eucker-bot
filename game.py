@@ -41,19 +41,18 @@ class BattlegroundGame:
         today = datetime.date.today()
         games = self.session.query(Game).filter(Game.date == today).all()
         return games
-    
+
     def get_game_for_day(self, day: datetime.date) -> List[Game]:
         """Gets all games for the current day"""
         games = self.session.query(Game).filter(Game.date == day).all()
         return games
-
 
     def change_balance(self, user: User, amount_to_change: int):
         """Changes the balance of a user by a given amount"""
         new_balance = user.balance.balance_amount + amount_to_change
         if new_balance < 0:
             new_balance = 0
-        user.balance.balance_amount = new_balance   
+        user.balance.balance_amount = new_balance
         self.session.commit()
 
     def place_wager(self, user: User, amount: int, outcome: Outcome) -> bool:
