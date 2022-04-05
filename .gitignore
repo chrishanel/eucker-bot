@@ -3,3 +3,5 @@ __pycache__
 .vscode
 main.db
 output
+.pytest_cache
+test.db

@@ -18,6 +18,7 @@ class Game(Base):
     season = db.Column(db.Integer)
     week = db.Column(db.Integer)
     dh = db.Column(db.Integer)
+    outcomes = relationship("Outcome", back_populates="game")
 
 
 class Outcome(Base):
@@ -94,11 +95,13 @@ class UserBonus(Base):
     status = db.Column(db.Integer)
     efft_d = db.Column(db.DateTime)
     expy_d = db.Column(db.DateTime)
-
-if __name__ == "__main__":
+def main():
     DB_CONN_URI = os.environ.get("DB_CONN_URI", "sqlite:///main.db")
     engine = db.create_engine(DB_CONN_URI)
     Session = sessionmaker()
     Session.configure(bind=engine)
     session = Session()
     Base.metadata.create_all(engine)
+
+if __name__ == "__main__":
+    main()
