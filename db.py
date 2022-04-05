@@ -1,12 +1,10 @@
+import os
 import sqlalchemy as db
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 
-engine = db.create_engine("sqlite:///main.db")
-Session = sessionmaker()
-Session.configure(bind=engine)
 Base = declarative_base()
-session = Session()
+
 
 class Game(Base):
     """
@@ -21,6 +19,7 @@ class Game(Base):
     season = db.Column(db.Integer)
     week = db.Column(db.Integer)
     dh = db.Column(db.Integer)
+    outcomes = relationship("Outcome", back_populates="game")
 
 
 class Outcome(Base):
@@ -59,6 +58,8 @@ class User(Base):
     id = db.Column(db.Integer, primary_key=True)
     discord_id = db.Column(db.String(255))
 
+    balance = relationship("Balance", uselist=False, backref="user")
+
 
 class Balance(Base):
     """
@@ -96,4 +97,15 @@ class UserBonus(Base):
     efft_d = db.Column(db.DateTime)
     expy_d = db.Column(db.DateTime)
 
-Base.metadata.create_all(engine)
+
+def main():
+    DB_CONN_URI = os.environ.get("DB_CONN_URI", "sqlite:///main.db")
+    engine = db.create_engine(DB_CONN_URI)
+    Session = sessionmaker()
+    Session.configure(bind=engine)
+    session = Session()
+    Base.metadata.create_all(engine)
+
+
+if __name__ == "__main__":
+    main()

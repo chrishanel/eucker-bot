@@ -46,8 +46,11 @@ def main(date_str=None):
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Ingest scraped data into uecker-bot database.")
-    parser.add_argument("--date",
-                        help="Date of data files in YYYY-MM-DD format",
-                        default=None, required=False)
+    parser.add_argument(
+        "--date",
+        help="Date of data files in YYYY-MM-DD format",
+        default=None,
+        required=False,
+    )
     args = parser.parse_args()
     main(args.date)
