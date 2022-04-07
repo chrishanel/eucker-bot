@@ -19,6 +19,7 @@ class Game(Base):
     season = db.Column(db.Integer)
     week = db.Column(db.Integer)
     dh = db.Column(db.Integer)
+    date_changed = db.Column(db.Boolean)
     outcomes = relationship("Outcome", back_populates="game")
 
 

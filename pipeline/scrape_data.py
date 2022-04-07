@@ -15,7 +15,16 @@ COL_NAMES = {
     "game_date": "date",
     "doubleheader": "dh",
 }
-SCHED_COLS = ["id", "home_team", "away_team", "date", "season", "week", "dh"]
+SCHED_COLS = [
+    "id",
+    "home_team",
+    "away_team",
+    "date",
+    "season",
+    "week",
+    "dh",
+    "date_changed",
+]
 DATA_DIR = os.environ.get("UECKER_DATA_DIR", "output")
 
 
@@ -59,6 +68,7 @@ def get_outcomes(games):
 
 
 def get_schedule(games):
+    games["date_changed"] = games.status.isin(("Postponed", "Suspended", "Cancelled"))
     return games[SCHED_COLS].set_index("id")
 
 

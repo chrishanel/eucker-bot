@@ -11,6 +11,18 @@ GAMES_TABLE = os.environ.get("GAMES_TABLE", "games")
 OUTCOMES_TABLE = os.environ.get("OUTCOMES_TABLE", "outcomes")
 DATA_DIR = os.environ.get("UECKER_DATA_DIR", "output")
 
+GAME_COLS = [
+    "id",
+    "home_team",
+    "away_team",
+    "date",
+    "season",
+    "week",
+    "dh",
+    "date_changed",
+]
+OUTCOME_COLS = ["id", "selection_name", "outcome_date", "game_id", "result", "runs"]
+
 
 def load_data(date_str):
     games = pd.read_csv(os.path.join(DATA_DIR, f"schedule_{date_str}.csv"))
@@ -23,16 +35,54 @@ def get_db_connection():
     return eng
 
 
-def update_table(data, table, eng):
+def update_games(data, eng):
     with eng.begin() as conn:
-        # create temporary table with new data
-        data.to_sql("tmp", conn, index=False, if_exists="replace")
-        # remove those rows from games
-        stmt = f"DELETE FROM {table} WHERE id IN (SELECT id FROM tmp);"
-        conn.execute(stmt)
-        # insert new data into games
-        data.to_sql(table, conn, index=False, if_exists="append")
-        conn.execute("DROP TABLE tmp;")
+        for _, row in data.iterrows():
+            stmt = f"SELECT * FROM {GAMES_TABLE} WHERE id = {row['id']};"
+            game = conn.execute(stmt).first()
+            # if game not in DB, insert all values and move on
+            if not game:
+                values = tuple(row[GAME_COLS])
+                stmt = f"INSERT INTO {GAMES_TABLE} VALUES {values};"
+                conn.execute(stmt)
+                continue
+            # if postponed/suspended, flag as date changed and nullify date
+            if row["date_changed"]:
+                stmt = (
+                    f"UPDATE {GAMES_TABLE} "
+                    f"SET date_changed = True, date = null "
+                    f"WHERE id = {row['id']};"
+                )
+                conn.execute(stmt)
+            # for games already in DB, update date/week/doubleheader
+            dt, wk, dh = row["date"], row["week"], row["dh"]
+            stmt = (
+                f"UPDATE {GAMES_TABLE} "
+                f"SET date = '{dt}', week = {wk}, dh = {dh} "
+                f"WHERE id = {row['id']};"
+            )
+            conn.execute(stmt)
+
+
+def update_outcomes(data, eng):
+    with eng.begin() as conn:
+        for _, row in data.iterrows():
+            stmt = f"SELECT * FROM {OUTCOMES_TABLE} WHERE id = '{row['id']}';"
+            oc = conn.execute(stmt).first()
+            # if outcome not in DB, insert all values and move on
+            if not oc:
+                values = tuple(row[OUTCOME_COLS])
+                stmt = f"INSERT INTO {OUTCOMES_TABLE} VALUES {values};"
+                conn.execute(stmt)
+                continue
+            # for outcomes already in DB, update result, date, and runs
+            res, ocd, runs = row["result"], row["outcome_date"], row["runs"]
+            stmt = (
+                f"UPDATE {OUTCOMES_TABLE} "
+                f"SET result = {res}, outcome_date = '{ocd}', runs = {runs} "
+                f"WHERE id = '{row['id']}';"
+            )
+            conn.execute(stmt)
 
 
 def main(date_str=None):
@@ -40,8 +90,8 @@ def main(date_str=None):
     if date_str is None:
         date_str = date.today().isoformat()
     games, outcomes = load_data(date_str)
-    update_table(games, GAMES_TABLE, eng)
-    update_table(outcomes, OUTCOMES_TABLE, eng)
+    update_games(games, eng)
+    update_outcomes(outcomes, eng)
 
 
 if __name__ == "__main__":
