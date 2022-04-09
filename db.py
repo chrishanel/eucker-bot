@@ -6,6 +6,10 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
+engine = db.create_engine(os.environ.get("DB_CONN_URI", "sqlite:///main.db"))
+Session = sessionmaker(engine)
+
+
 class Game(Base):
     """
     Available games to be wagered upon, and other metadata
@@ -102,11 +106,6 @@ class UserBonus(Base):
 
 
 def main():
-    DB_CONN_URI = os.environ.get("DB_CONN_URI", "sqlite:///main.db")
-    engine = db.create_engine(DB_CONN_URI)
-    Session = sessionmaker()
-    Session.configure(bind=engine)
-    session = Session()
     Base.metadata.create_all(engine)
 
 
