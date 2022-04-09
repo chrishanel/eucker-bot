@@ -1,9 +1,16 @@
 import os
+import sys
 from datetime import date
 from argparse import ArgumentParser
 
 import sqlalchemy
 import pandas as pd
+
+
+# expose modules in parent directory
+sys.path.append(os.path.abspath(".."))
+
+from db import Game, Outcome, Session
 
 
 DB_CONN_URI = os.environ.get("DB_CONN_URI", "sqlite:///main.db")
@@ -26,72 +33,53 @@ OUTCOME_COLS = ["id", "selection_name", "outcome_date", "game_id", "result", "ru
 
 def load_data(date_str):
     games = pd.read_csv(os.path.join(DATA_DIR, f"schedule_{date_str}.csv"))
+    games.date = pd.to_datetime(games.date).dt.date
     outcomes = pd.read_csv(os.path.join(DATA_DIR, f"outcomes_{date_str}.csv"))
+    outcomes.outcome_date = pd.to_datetime(outcomes.outcome_date).dt.date
     return games, outcomes
 
 
-def get_db_connection():
-    eng = sqlalchemy.create_engine(DB_CONN_URI)
-    return eng
+def update_games(data, session):
+    for _, row in data.iterrows():
+        game = session.query(Game).filter(Game.id == row["id"]).first()
+        # if game not in DB, create new row
+        if not game:
+            game = Game(**row)
+        # if postponed/suspended, flag as date changed and nullify date
+        if row["date_changed"]:
+            game.date_changed = True
+            game.date = None
+        # otherwise ensure date/week/dh are correct
+        else:
+            if game.date != row["date"]:
+                game.date = row["date"]
+                game.week = row["week"]
+            if game.dh != row.dh:
+                game.dh = row["dh"]
+        session.add(game)
 
 
-def update_games(data, eng):
-    with eng.begin() as conn:
-        for _, row in data.iterrows():
-            stmt = f"SELECT * FROM {GAMES_TABLE} WHERE id = {row['id']};"
-            game = conn.execute(stmt).first()
-            # if game not in DB, insert all values and move on
-            if not game:
-                values = tuple(row[GAME_COLS])
-                stmt = f"INSERT INTO {GAMES_TABLE} VALUES {values};"
-                conn.execute(stmt)
-                continue
-            # if postponed/suspended, flag as date changed and nullify date
-            if row["date_changed"]:
-                stmt = (
-                    f"UPDATE {GAMES_TABLE} "
-                    f"SET date_changed = True, date = null "
-                    f"WHERE id = {row['id']};"
-                )
-                conn.execute(stmt)
-            # for games already in DB, update date/week/doubleheader
-            dt, wk, dh = row["date"], row["week"], row["dh"]
-            stmt = (
-                f"UPDATE {GAMES_TABLE} "
-                f"SET date = '{dt}', week = {wk}, dh = {dh} "
-                f"WHERE id = {row['id']};"
-            )
-            conn.execute(stmt)
-
-
-def update_outcomes(data, eng):
-    with eng.begin() as conn:
-        for _, row in data.iterrows():
-            stmt = f"SELECT * FROM {OUTCOMES_TABLE} WHERE id = '{row['id']}';"
-            oc = conn.execute(stmt).first()
-            # if outcome not in DB, insert all values and move on
-            if not oc:
-                values = tuple(row[OUTCOME_COLS])
-                stmt = f"INSERT INTO {OUTCOMES_TABLE} VALUES {values};"
-                conn.execute(stmt)
-                continue
-            # for outcomes already in DB, update result, date, and runs
-            res, ocd, runs = row["result"], row["outcome_date"], row["runs"]
-            stmt = (
-                f"UPDATE {OUTCOMES_TABLE} "
-                f"SET result = {res}, outcome_date = '{ocd}', runs = {runs} "
-                f"WHERE id = '{row['id']}';"
-            )
-            conn.execute(stmt)
+def update_outcomes(data, session):
+    for _, row in data.iterrows():
+        oc = session.query(Outcome).filter(Outcome.id == row["id"]).first()
+        # if outcome not in DB, create new row
+        if not oc:
+            oc = Outcome(**row)
+        # if game is complete, update row with results
+        if oc.result != row["result"]:
+            oc.result = row["result"]
+            oc.outcome_date = row["outcome_date"]
+            oc.runs = row["runs"]
+        session.add(oc)
 
 
 def main(date_str=None):
-    eng = get_db_connection()
     if date_str is None:
         date_str = date.today().isoformat()
     games, outcomes = load_data(date_str)
-    update_games(games, eng)
-    update_outcomes(outcomes, eng)
+    with Session.begin() as session:
+        update_games(games, session)
+        update_outcomes(outcomes, session)
 
 
 if __name__ == "__main__":
