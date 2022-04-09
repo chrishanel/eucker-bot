@@ -35,6 +35,7 @@ class Outcome(Base):
     game_id = db.Column(db.Integer, db.ForeignKey("games.id"))
     result = db.Column(db.Integer)
     runs = db.Column(db.Integer)
+    game = relationship("Game", back_populates="outcomes")
 
 
 class Wager(Base):
@@ -47,6 +48,7 @@ class Wager(Base):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
     wager_amount = db.Column(db.Integer)
     outcome_id = db.Column(db.Integer, db.ForeignKey("outcomes.id"))
+    settled = db.Column(db.Boolean, default=False)
 
 
 class User(Base):
