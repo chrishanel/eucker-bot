@@ -76,7 +76,7 @@ def clean_data(data):
     games = pd.DataFrame.from_records(data)
     games = games.rename(COL_NAMES, axis=1)
     games["date"] = pd.to_datetime(games["date"]).dt.date
-    games["dh"] = games["dh"].replace(dict(Y=1, N=0))
+    games["dh"] = games["dh"].replace(dict(Y=1, S=1, N=0))
     games["season"] = OPENING_DAY.year
     games["week"] = games["date"].apply(_week_of_season)
     return games
